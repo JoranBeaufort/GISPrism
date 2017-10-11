@@ -1,0 +1,29 @@
+# Python file to batch clip a set of rasters to the extent of a shapefile!
+# Author: Manuel Bär
+# Date: 10.10.2017
+
+import os, fnmatch
+import qgis.core, qgis.utils, os, fnmatch
+from osgeo import gdal
+import subprocess
+import win32api
+
+INPUT_FOLDER= win32api.GetShortPathName(u'C:/PATH/WITH/UMLAUTE/üäö/')
+OUTPUT_FOLDER= win32api.GetShortPathName(u'E:/OUTPUT/')
+CLIP= win32api.GetShortPathName(u'C:/CLIPPINGS/CLIP.shp')
+
+def findRasters (path, filter):
+    for root, dirs, files in os.walk(path):
+        for file in fnmatch.filter(files, filter):
+            yield file
+
+for raster in findRasters(INPUT_FOLDER, '*.tif'):
+    print(raster)
+    inRaster = INPUT_FOLDER + raster
+    outVrt = OUTPUT_FOLDER + raster.split(".")[0]+".vrt"
+    outRaster = OUTPUT_FOLDER + raster
+    # print(outVrt)
+    cmd = 'gdalwarp -q -cutline %s -crop_to_cutline -of vrt %s %s' % (CLIP, inRaster, outVrt)
+    subprocess.check_output(cmd, shell=True)    
+    cmd = 'gdal_translate -co compress=LZW %s %s' % (outVrt, outRaster)
+    subprocess.check_output(cmd, shell=True)
